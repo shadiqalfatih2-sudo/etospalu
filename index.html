@@ -84,6 +84,18 @@
       right: 14px;
       bottom: calc(14px + env(safe-area-inset-bottom));
       z-index: 3;
+      opacity: 0;
+      visibility: hidden;
+      pointer-events: none;
+      transform: translateY(8px);
+      transition: opacity .3s ease, transform .3s ease, visibility .3s ease;
+    }
+
+    .fallback.visible {
+      opacity: 1;
+      visibility: visible;
+      pointer-events: auto;
+      transform: none;
     }
 
     .fallback a {
@@ -116,7 +128,7 @@
       referrerpolicy="strict-origin-when-cross-origin">
     </iframe>
 
-    <div class="fallback">
+    <div id="fallback" class="fallback">
       <a
         href="https://script.google.com/macros/s/AKfycbxtKlccHxr1kuXlIP6YjXeVTQ5VAAA9eAtNn4RJjHzSMo7b62QaTi7i8A8mDFYMvME/exec"
         target="_blank"
@@ -130,15 +142,22 @@
     (function () {
       var frame = document.getElementById('app-frame');
       var loader = document.getElementById('loader');
+      var fallback = document.getElementById('fallback');
+      var loaded = false;
 
-      function hideLoader() {
+      function finishLoad() {
+        loaded = true;
         loader.classList.add('hidden');
+        fallback.classList.remove('visible');
       }
 
-      frame.addEventListener('load', hideLoader);
+      frame.addEventListener('load', finishLoad);
 
-      // Mencegah loader terus tampil jika browser tidak mengirim event load.
-      window.setTimeout(hideLoader, 8000);
+      // Tombol cadangan hanya muncul bila aplikasi benar-benar lambat dibuka.
+      window.setTimeout(function () {
+        loader.classList.add('hidden');
+        if (!loaded) fallback.classList.add('visible');
+      }, 9000);
     })();
   </script>
 </body>
