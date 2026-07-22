@@ -1,4 +1,4 @@
-const GAS_URL = 'https://script.google.com/macros/s/AKfycby2KnGRMyFCJxL-FaKy4v5z085Bmz1-S1RedUt2jdsX3pcyRsyTuYR1n7P1yjHM90U/exec';
+const GAS_URL = 'https://script.google.com/macros/s/AKfycbxtKlccHxr1kuXlIP6YjXeVTQ5VAAA9eAtNn4RJjHzSMo7b62QaTi7i8A8mDFYMvME/exec';
 const SITE_URL = 'https://etosidpalu.com';
 const FALLBACK_IMAGE = 'https://lh3.googleusercontent.com/d/1vre9si_Z0EmxHxyvf2kHvADxj1KwPlao=w1600';
 const LOGO_URL = 'https://drive.google.com/thumbnail?id=1RBwPV9Zy28PsN3X1A76Z9dmWz5W4LB1i&sz=w400';
@@ -75,22 +75,29 @@ function normalizeImageUrl(value) {
 
 async function fetchPublication(slug) {
   const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), 8500);
+  const timeout = setTimeout(() => controller.abort(), 15000);
 
   try {
-    const response = await fetch(
-      `${GAS_URL}?api=publication&slug=${encodeURIComponent(slug)}`,
-      {
-        redirect: 'follow',
-        signal: controller.signal,
-        headers: {
-          accept: 'application/json,text/plain,*/*',
-          'user-agent': 'Etos-ID-Palu-Metadata/1.0'
-        }
-      }
-    );
+    const endpoint = new URL(GAS_URL);
+    endpoint.searchParams.set('api', 'publication');
+    endpoint.searchParams.set('slug', slug);
+    endpoint.searchParams.set('_ts', String(Date.now()));
 
-    if (!response.ok) throw new Error(`Metadata upstream returned ${response.status}`);
+    const response = await fetch(endpoint.toString(), {
+      redirect: 'follow',
+      signal: controller.signal,
+      cache: 'no-store',
+      headers: {
+        accept: 'application/json,text/plain,*/*',
+        'user-agent': 'Etos-ID-Palu-Metadata/2.0',
+        'cache-control': 'no-cache'
+      }
+    });
+
+    if (!response.ok) {
+      throw new Error(`Metadata upstream returned ${response.status}`);
+    }
+
     const payload = await response.json();
     if (!payload || payload.status !== 'success' || !payload.data) return null;
     return payload.data;
@@ -240,7 +247,7 @@ module.exports = async function handler(req, res) {
 
   if (!/^[a-z0-9-]{3,220}$/.test(slug)) {
     res.statusCode = 404;
-    res.setHeader('Cache-Control', 'public, s-maxage=60');
+    res.setHeader('Cache-Control', 'no-store, max-age=0, must-revalidate');
     res.end(renderNotFound(slug));
     return;
   }
@@ -249,25 +256,32 @@ module.exports = async function handler(req, res) {
     const publication = await fetchPublication(slug);
     if (!publication) {
       res.statusCode = 404;
-      res.setHeader('Cache-Control', 'public, s-maxage=60, stale-while-revalidate=300');
+      res.setHeader('Cache-Control', 'no-store, max-age=0, must-revalidate');
       res.end(renderNotFound(slug));
       return;
     }
 
     const actualType = normalizeType(publication.jenis);
-    const actualPath = `/${routeSegment(actualType)}/${encodeURIComponent(slug)}`;
+    const canonicalSlug = String(publication.slug || slug).trim().toLowerCase();
+    const actualPath = `/${routeSegment(actualType)}/${encodeURIComponent(canonicalSlug)}`;
     const requestedPath = `/${routeSegment(requestedType)}/${encodeURIComponent(slug)}`;
 
+    /*
+     * Bila judul pernah berubah, Apps Script dapat menemukan tulisan melalui
+     * ID ART/BRT pada ujung slug dan mengembalikan slug terbaru. URL lama
+     * kemudian diarahkan secara permanen ke URL kanonis yang benar.
+     */
     if (actualPath !== requestedPath) {
       res.statusCode = 308;
       res.setHeader('Location', actualPath);
+      res.setHeader('Cache-Control', 'no-store, max-age=0');
       res.end();
       return;
     }
 
-    publication.slug = slug;
+    publication.slug = canonicalSlug;
     res.statusCode = 200;
-    res.setHeader('Cache-Control', 'public, s-maxage=300, stale-while-revalidate=86400');
+    res.setHeader('Cache-Control', 'public, s-maxage=300, stale-while-revalidate=3600');
     res.end(renderPublicationPage(publication));
   } catch (error) {
     console.error('Failed to render publication metadata:', error);
