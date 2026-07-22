@@ -38,6 +38,7 @@
       --brand-700: #26735b;
       --paper: #f4f7f6;
       --ink: #17211d;
+      --line: #dce5e0;
     }
 
     * { box-sizing: border-box; }
@@ -48,7 +49,7 @@
       min-height: -webkit-fill-available;
       margin: 0;
       overflow: hidden;
-      background: var(--paper);
+      background: var(--brand-950);
       font-family: Arial, Helvetica, sans-serif;
     }
 
@@ -63,36 +64,28 @@
       min-height: -webkit-fill-available;
       border: 0;
       background: var(--paper);
-      opacity: 0;
-      transition: opacity .42s cubic-bezier(.22,1,.36,1);
+      opacity: 1;
       pointer-events: none;
     }
 
-    body.app-ready #etos-app {
-      opacity: 1;
-      pointer-events: auto;
-    }
+    body.app-ready #etos-app { pointer-events: auto; }
 
     .launch-preview {
       position: fixed;
       inset: 0;
       z-index: 2;
       overflow: hidden;
-      background: var(--paper);
+      background: var(--brand-950);
       opacity: 1;
       visibility: visible;
-      transition:
-        opacity .38s ease,
-        visibility 0s linear 0s;
+      transition: opacity .52s cubic-bezier(.22,1,.36,1), visibility 0s linear 0s;
     }
 
     body.app-ready .launch-preview {
       opacity: 0;
       visibility: hidden;
       pointer-events: none;
-      transition:
-        opacity .38s ease,
-        visibility 0s linear .38s;
+      transition: opacity .52s cubic-bezier(.22,1,.36,1), visibility 0s linear .52s;
     }
 
     .preview-nav {
@@ -101,16 +94,12 @@
       display: flex;
       align-items: center;
       gap: 1.1rem;
-      background: rgba(255,255,255,.98);
+      background: rgba(255,255,255,.985);
       border-top: 2px solid var(--brand-700);
-      border-bottom: 1px solid #dde5e1;
+      border-bottom: 1px solid var(--line);
     }
 
-    .preview-logo {
-      width: 74px;
-      max-height: 43px;
-      object-fit: contain;
-    }
+    .preview-logo { width: 74px; max-height: 43px; object-fit: contain; }
 
     .preview-brand {
       color: #14201b;
@@ -128,12 +117,7 @@
       align-content: space-between;
     }
 
-    .preview-lines span {
-      display: block;
-      height: 2px;
-      border-radius: 99px;
-      background: var(--ink);
-    }
+    .preview-lines span { display: block; height: 2px; border-radius: 99px; background: var(--ink); }
 
     .preview-hero {
       position: relative;
@@ -143,25 +127,24 @@
       background: var(--brand-950);
     }
 
-    .preview-hero img {
+    .preview-photo {
       position: absolute;
       inset: 0;
       width: 100%;
       height: 100%;
       object-fit: cover;
       object-position: center 48%;
-      filter: saturate(.88) contrast(1.02);
-      transform: scale(1.008);
-      animation: previewDrift 7s ease-out both;
+      filter: saturate(.9) contrast(1.02);
+      transform: scale(1.018);
+      animation: previewDrift 8s ease-out both;
     }
 
-    .preview-hero::after {
-      content: '';
+    .preview-shade {
       position: absolute;
       inset: 0;
       background:
         linear-gradient(90deg, rgba(4,26,22,.9) 0%, rgba(4,26,22,.58) 42%, rgba(4,26,22,.14) 78%),
-        linear-gradient(0deg, rgba(4,26,22,.74), transparent 58%);
+        linear-gradient(0deg, rgba(4,26,22,.72), transparent 58%);
     }
 
     .preview-copy {
@@ -173,6 +156,7 @@
       display: flex;
       flex-direction: column;
       justify-content: center;
+      align-items: flex-start;
     }
 
     .preview-kicker {
@@ -191,32 +175,66 @@
       letter-spacing: -.055em;
     }
 
-    .preview-copy p {
-      max-width: 620px;
+    .preview-tagline {
+      max-width: 650px;
       margin: 0;
-      color: rgba(255,255,255,.78);
+      color: rgba(255,255,255,.82);
       font-size: clamp(1rem, 2vw, 1.25rem);
       line-height: 1.65;
     }
 
-    .preview-status {
-      margin-top: 2rem;
-      width: min(320px, 75vw);
-      height: 3px;
-      overflow: hidden;
-      border-radius: 99px;
-      background: rgba(255,255,255,.22);
+    .preview-actions { display: flex; gap: .75rem; margin-top: 1.7rem; }
+
+    .preview-action {
+      min-height: 46px;
+      padding: 0 1.2rem;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      border: 1px solid rgba(255,255,255,.45);
+      border-radius: 999px;
+      color: #fff;
+      background: rgba(255,255,255,.06);
+      font-size: .7rem;
+      font-weight: 800;
+      letter-spacing: .06em;
+      text-transform: uppercase;
     }
 
-    .preview-status::after {
-      content: '';
-      display: block;
-      width: 42%;
-      height: 100%;
-      border-radius: inherit;
-      background: #dcebe4;
-      animation: progress 1.45s ease-in-out infinite;
+    .preview-action.primary { color: var(--brand-950); border-color: #e6f0e9; background: #e6f0e9; }
+
+    .preview-loading {
+      margin-top: 1.65rem;
+      display: flex;
+      align-items: center;
+      gap: .75rem;
+      color: rgba(255,255,255,.66);
+      font-size: .68rem;
+      font-weight: 700;
+      letter-spacing: .08em;
+      text-transform: uppercase;
     }
+
+    .preview-progress {
+      position: relative;
+      width: 120px;
+      height: 3px;
+      overflow: hidden;
+      border-radius: 999px;
+      background: rgba(255,255,255,.2);
+    }
+
+    .preview-progress::after {
+      content: '';
+      position: absolute;
+      inset: 0 auto 0 0;
+      width: 42%;
+      border-radius: inherit;
+      background: #a9cbb7;
+      animation: progress 1.35s ease-in-out infinite;
+    }
+
+    .preview-focus { display: none; }
 
     .fallback {
       position: fixed;
@@ -228,7 +246,7 @@
       border: 1px solid rgba(255,255,255,.35);
       border-radius: 999px;
       color: #fff;
-      background: rgba(8,35,31,.88);
+      background: rgba(8,35,31,.9);
       text-decoration: none;
       font-size: .78rem;
       font-weight: 700;
@@ -238,101 +256,138 @@
     .fallback.show { display: inline-flex; }
 
     @keyframes progress {
-      0% { transform: translateX(-110%); }
-      60%,100% { transform: translateX(260%); }
+      0% { transform: translateX(-115%); }
+      60%,100% { transform: translateX(270%); }
     }
 
     @keyframes previewDrift {
-      from { transform: scale(1.025); }
-      to { transform: scale(1.008); }
+      from { transform: scale(1.035); }
+      to { transform: scale(1.018); }
     }
 
     @media (max-width: 720px) {
-      .preview-nav {
-        height: 72px;
-        padding: 0 1.25rem;
-      }
-
+      .launch-preview { overflow-y: auto; overflow-x: hidden; background: var(--paper); }
+      .preview-nav { height: 72px; padding: 0 1.25rem; position: relative; z-index: 5; }
       .preview-logo { width: 96px; }
       .preview-brand { display: none; }
 
       .preview-hero {
-        min-height: calc(100dvh - 72px);
+        min-height: 0;
         display: grid;
         grid-template-rows: auto auto;
+        overflow: visible;
       }
 
-      .preview-hero img {
+      .preview-photo {
         position: relative;
         inset: auto;
+        grid-row: 1;
         width: 100%;
         height: auto;
-        max-height: 55dvh;
+        display: block;
         object-fit: contain;
         object-position: center;
-        background: #edf2ef;
+        transform: none;
         animation: none;
-      }
-
-      .preview-hero::after {
-        z-index: 1;
-        top: auto;
-        height: 38px;
-        background: linear-gradient(180deg, rgba(8,35,31,0), var(--brand-950));
-        transform: translateY(-37px);
-      }
-
-      .preview-copy {
-        min-height: 0;
-        width: 100%;
-        padding: 1rem 1.25rem 2rem;
-        justify-content: flex-start;
+        filter: saturate(.94) contrast(1.015);
         background: var(--brand-950);
       }
 
-      .preview-copy h1 {
-        margin-top: .8rem;
-        font-size: clamp(3.15rem, 15vw, 4.5rem);
-        line-height: .9;
+      .preview-shade { display: none; }
+
+      .preview-copy {
+        grid-row: 2;
+        width: 100%;
+        min-height: 0;
+        margin-top: -112px;
+        padding: 7.6rem 1.25rem 2rem;
+        display: flex;
+        justify-content: flex-start;
+        background: linear-gradient(
+          180deg,
+          rgba(8,35,31,0) 0,
+          rgba(8,35,31,.32) 30px,
+          rgba(8,35,31,.78) 70px,
+          var(--brand-950) 112px,
+          var(--brand-950) 100%
+        );
       }
 
-      .preview-copy p {
-        font-size: .9rem;
-        line-height: 1.6;
+      .preview-kicker { font-size: .58rem; line-height: 1.5; letter-spacing: .16em; }
+      .preview-copy h1 { margin: .9rem 0 .75rem; font-size: clamp(3.2rem, 15.5vw, 4.45rem); line-height: .9; }
+      .preview-tagline { font-family: Georgia, 'Times New Roman', serif; font-size: clamp(1.28rem, 6.4vw, 1.72rem); font-style: italic; line-height: 1.16; }
+      .preview-actions { width: 100%; display: grid; grid-template-columns: 1fr; margin-top: 1.45rem; }
+      .preview-action { width: 100%; min-height: 50px; }
+      .preview-loading { width: 100%; margin-top: 1.25rem; justify-content: space-between; }
+      .preview-progress { width: min(42vw, 160px); }
+
+      .preview-focus {
+        display: grid;
+        grid-template-columns: repeat(3, 148px);
+        width: 100%;
+        overflow: hidden;
+        color: var(--ink);
+        background: #fff;
+        border-radius: 0 0 24px 24px;
+        box-shadow: 0 18px 42px rgba(8,31,27,.09);
       }
 
-      .preview-status {
-        margin-top: 1.4rem;
+      .preview-focus span {
+        min-height: 94px;
+        padding: 1rem .5rem;
+        display: grid;
+        place-items: center;
+        border-right: 1px solid var(--line);
+        text-align: center;
+        font-size: .78rem;
+        font-weight: 800;
+        line-height: 1.45;
       }
+
+      .preview-focus b { display: block; color: var(--brand-700); }
+    }
+
+    @media (max-width: 390px) {
+      .preview-copy { margin-top: -92px; padding: 6.35rem 1rem 1.8rem; }
+      .preview-copy h1 { font-size: clamp(2.95rem, 15vw, 3.85rem); }
+      .preview-tagline { font-size: clamp(1.15rem, 6.2vw, 1.5rem); }
     }
 
     @media (prefers-reduced-motion: reduce) {
-      #etos-app,
       .launch-preview,
-      .preview-hero img,
-      .preview-status::after {
-        animation: none;
-        transition-duration: 1ms;
-      }
+      .preview-photo,
+      .preview-progress::after { animation: none; transition-duration: 1ms; }
     }
   </style>
 </head>
-
 <body>
-  <div id="launch-preview" class="launch-preview" aria-hidden="true">
+  <div id="launch-preview" class="launch-preview" aria-live="polite">
     <div class="preview-nav">
-      <img class="preview-logo" src="https://drive.google.com/thumbnail?id=1RBwPV9Zy28PsN3X1A76Z9dmWz5W4LB1i&sz=w400" alt="">
+      <img class="preview-logo" src="https://drive.google.com/thumbnail?id=1RBwPV9Zy28PsN3X1A76Z9dmWz5W4LB1i&sz=w400" alt="Logo Etos ID">
       <span class="preview-brand">Etos ID Palu</span>
       <span class="preview-lines" aria-hidden="true"><span></span><span></span><span></span></span>
     </div>
 
     <section class="preview-hero">
-      <img src="https://lh3.googleusercontent.com/d/1vre9si_Z0EmxHxyvf2kHvADxj1KwPlao=w1600" alt="">
+      <img class="preview-photo" src="https://lh3.googleusercontent.com/d/1vre9si_Z0EmxHxyvf2kHvADxj1KwPlao=w1600" alt="Kegiatan Etos ID Palu">
+      <div class="preview-shade"></div>
       <div class="preview-copy">
         <span class="preview-kicker">Ekosistem Pembinaan &amp; Literasi</span>
         <h1>Etos ID Palu</h1>
-        <p>Membentuk nalar kritis, menempa etos peradaban.</p>
-        <div class="preview-status" aria-hidden="true"></div>
+        <p class="preview-tagline">Membentuk Nalar Kritis, Menempa Etos Peradaban.</p>
+        <div class="preview-actions" aria-hidden="true">
+          <span class="preview-action primary">Jelajahi Program</span>
+          <span class="preview-action">Ikuti Perjalanan Kami</span>
+        </div>
+        <div class="preview-loading">
+          <span>Menyiapkan halaman</span>
+          <span class="preview-progress" aria-hidden="true"></span>
+        </div>
+      </div>
+      <div class="preview-focus" aria-hidden="true">
+        <span>Character <b>Building</b></span>
+        <span>Leadership <b>Development</b></span>
+        <span>Critical <b>Literacy</b></span>
       </div>
     </section>
   </div>
@@ -356,16 +411,16 @@
     rel="noopener"
   >Buka langsung</a>
 
-  <!-- IMPORTANT: This wrapper must point only to the public Etos ID Palu Web App. -->
   <script>
     const ETOS_PUBLIC_WEB_APP_URL = "https://script.google.com/macros/s/AKfycbxtKlccHxr1kuXlIP6YjXeVTQ5VAAA9eAtNn4RJjHzSMo7b62QaTi7i8A8mDFYMvME/exec";
 
     (function () {
-      var GAS_URL = 'https://script.google.com/macros/s/AKfycbxtKlccHxr1kuXlIP6YjXeVTQ5VAAA9eAtNn4RJjHzSMo7b62QaTi7i8A8mDFYMvME/exec';
+      var GAS_URL = ETOS_PUBLIC_WEB_APP_URL;
       var iframe = document.getElementById('etos-app');
       var preview = document.getElementById('launch-preview');
       var fallback = document.getElementById('fallback');
       var ready = false;
+      var loadFallbackTimer = null;
 
       function parsePublicationRoute(pathname) {
         var match = String(pathname || '').match(/^\/(berita|opini)\/([a-z0-9-]+)\/?$/i);
@@ -380,28 +435,38 @@
       }
 
       function revealApp() {
-        if (ready) return;
+        if(ready) return;
         ready = true;
+        if(loadFallbackTimer) window.clearTimeout(loadFallbackTimer);
         document.body.classList.add('app-ready');
         window.setTimeout(function () {
-          if (preview && preview.parentNode) preview.parentNode.removeChild(preview);
-        }, 520);
+          if(preview && preview.parentNode) preview.parentNode.removeChild(preview);
+        }, 620);
       }
 
       iframe.src = iframeUrlForLocation();
       fallback.href = iframe.src;
 
       iframe.addEventListener('load', function () {
-        window.requestAnimationFrame(function () {
-          window.requestAnimationFrame(revealApp);
-        });
+        // Fallback aman untuk browser yang tidak meneruskan postMessage ready.
+        loadFallbackTimer = window.setTimeout(function () {
+          window.requestAnimationFrame(function () {
+            window.requestAnimationFrame(revealApp);
+          });
+        }, 420);
       }, { once: true });
 
       window.addEventListener('message', function(event) {
         if(event.source !== iframe.contentWindow) return;
         var data = event.data || {};
-        if(data.source !== 'etos-id-palu' || data.action !== 'route') return;
+        if(data.source !== 'etos-id-palu') return;
 
+        if(data.action === 'ready') {
+          window.setTimeout(revealApp, 90);
+          return;
+        }
+
+        if(data.action !== 'route') return;
         var path = String(data.path || '/');
         if(!/^\/$|^\/(berita|opini)\/[a-z0-9-]+\/?$/i.test(path)) path = '/';
         var method = data.replace ? 'replaceState' : 'pushState';
@@ -410,15 +475,13 @@
       });
 
       window.addEventListener('popstate', function() {
-        ready = true;
-        document.body.classList.add('app-ready');
         iframe.src = iframeUrlForLocation();
         fallback.href = iframe.src;
       });
 
       window.setTimeout(function () {
-        if (!ready) fallback.classList.add('show');
-      }, 9000);
+        if(!ready) fallback.classList.add('show');
+      }, 12000);
     }());
   </script>
 </body>
