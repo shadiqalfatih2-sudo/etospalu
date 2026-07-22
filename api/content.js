@@ -35,6 +35,10 @@ function normalizeType(value) {
   return String(value || '').toLowerCase() === 'berita' ? 'Berita' : 'Opini';
 }
 
+function routeSegment(type) {
+  return normalizeType(type) === 'Berita' ? 'berita' : 'opini';
+}
+
 function toIsoDate(value) {
   const match = String(value || '').trim().match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})(?:\s+(\d{1,2}):(\d{2})(?::(\d{2}))?)?/);
   if (!match) return '';
@@ -47,14 +51,9 @@ function toIsoDate(value) {
   return `${year}-${month}-${day}T${hour}:${minute}:${second}+07:00`;
 }
 
-
-function routeSegment(type) {
-  return normalizeType(type) === 'Berita' ? 'berita' : 'opini';
-}
-
 function normalizeImageUrl(value) {
   const url = String(value || '').trim();
-  if (!url) return FALLBACK_IMAGE;
+  if (!url || /^data:/i.test(url)) return FALLBACK_IMAGE;
 
   const patterns = [
     /\/file\/d\/([a-zA-Z0-9_-]{10,})/,
@@ -66,20 +65,20 @@ function normalizeImageUrl(value) {
   for (const pattern of patterns) {
     const match = url.match(pattern);
     if (match && match[1]) {
-      return `https://lh3.googleusercontent.com/d/${match[1]}=w1600`;
+      return `https://lh3.googleusercontent.com/d/${match[1]}=w1800`;
     }
   }
 
   return /^https:\/\//i.test(url) ? url : FALLBACK_IMAGE;
 }
 
-async function fetchPublication(slug) {
+async function fetchGasPublication(slug, full) {
   const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), 15000);
+  const timeout = setTimeout(() => controller.abort(), full ? 30000 : 15000);
 
   try {
     const endpoint = new URL(GAS_URL);
-    endpoint.searchParams.set('api', 'publication');
+    endpoint.searchParams.set('api', full ? 'publication-full' : 'publication');
     endpoint.searchParams.set('slug', slug);
     endpoint.searchParams.set('_ts', String(Date.now()));
 
@@ -89,13 +88,15 @@ async function fetchPublication(slug) {
       cache: 'no-store',
       headers: {
         accept: 'application/json,text/plain,*/*',
-        'user-agent': 'Etos-ID-Palu-Metadata/2.0',
+        'user-agent': full
+          ? 'Etos-ID-Palu-Article/3.0'
+          : 'Etos-ID-Palu-Metadata/3.0',
         'cache-control': 'no-cache'
       }
     });
 
     if (!response.ok) {
-      throw new Error(`Metadata upstream returned ${response.status}`);
+      throw new Error(`Upstream returned ${response.status}`);
     }
 
     const payload = await response.json();
@@ -113,7 +114,6 @@ function renderNotFound(slug) {
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-  <meta name="robots" content="noindex,nofollow">
   <meta name="theme-color" content="#0e2f2d">
   <title>Publikasi tidak ditemukan | Etos ID Palu</title>
   <style>
@@ -133,12 +133,23 @@ function renderPublicationPage(data) {
   const canonical = `${SITE_URL}/${segment}/${encodeURIComponent(slug)}`;
   const title = String(data.judul || 'Publikasi Etos ID Palu').trim();
   const fullTitle = `${title} | Etos ID Palu`;
-  const description = truncate(data.excerpt || data.isi || '', 190) || 'Baca publikasi terbaru dari Etos ID Palu.';
+  const description = truncate(data.excerpt || '', 190) || 'Baca publikasi terbaru dari Etos ID Palu.';
   const image = normalizeImageUrl(data.thumb);
+  const imagePosition = String(data.thumbPosition || '50% 50%').trim();
   const author = String(data.penulis || 'Etos ID Palu').trim();
   const date = String(data.tanggal || '').trim();
   const isoDate = toIsoDate(date);
-  const iframeUrl = `${GAS_URL}?slug=${encodeURIComponent(slug)}&jenis=${encodeURIComponent(type)}&embedded=1`;
+  const bootstrap = JSON.stringify({
+    slug,
+    type,
+    title,
+    author,
+    date,
+    image,
+    imagePosition,
+    canonical
+  }).replace(/</g, '\\u003c');
+
   const structuredData = JSON.stringify({
     '@context': 'https://schema.org',
     '@type': type === 'Berita' ? 'NewsArticle' : 'Article',
@@ -160,7 +171,7 @@ function renderPublicationPage(data) {
 <html lang="id">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,viewport-fit=cover">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
   <meta name="theme-color" content="#0e2f2d">
   <meta name="description" content="${escapeHtml(description)}">
   <meta name="robots" content="index,follow,max-image-preview:large">
@@ -188,49 +199,232 @@ function renderPublicationPage(data) {
   <meta name="twitter:image" content="${escapeHtml(image)}">
 
   <link rel="icon" href="https://drive.google.com/thumbnail?id=1RBwPV9Zy28PsN3X1A76Z9dmWz5W4LB1i&sz=w128">
-  <link rel="preconnect" href="https://script.google.com">
-  <link rel="preconnect" href="https://script.googleusercontent.com">
   <link rel="preconnect" href="https://lh3.googleusercontent.com">
   <link rel="preload" as="image" href="${escapeHtml(image)}">
   <script type="application/ld+json">${structuredData}</script>
 
   <style>
-    :root{--brand:#0e2f2d;--accent:#26735b;--paper:#f4f7f6;--ink:#17211d}
-    *{box-sizing:border-box}html,body{width:100%;height:100%;margin:0;overflow:hidden;background:var(--paper);font-family:Arial,Helvetica,sans-serif}
-    #etos-app{position:fixed;inset:0;z-index:1;width:100%;height:100vh;height:100dvh;border:0;background:var(--paper);opacity:0;pointer-events:none;transition:opacity .42s cubic-bezier(.22,1,.36,1)}
-    body.ready #etos-app{opacity:1;pointer-events:auto}
-    .preview{position:fixed;inset:0;z-index:2;display:grid;grid-template-rows:76px minmax(0,1fr);background:var(--paper);transition:opacity .38s ease,visibility 0s linear 0s}
-    body.ready .preview{opacity:0;visibility:hidden;pointer-events:none;transition:opacity .38s ease,visibility 0s linear .38s}
-    .nav{display:flex;align-items:center;gap:1rem;padding:0 clamp(1.2rem,4vw,3rem);border-top:2px solid var(--accent);border-bottom:1px solid #dce5e0;background:#fff}
-    .nav img{width:78px;max-height:42px;object-fit:contain}.brand{font-family:Georgia,serif;font-size:1.65rem;font-weight:700}.tag{margin-left:auto;color:#65726c;font-size:.76rem;font-weight:700;text-transform:uppercase;letter-spacing:.12em}
-    .cover{position:relative;overflow:hidden;color:#fff;background:var(--brand)}.cover>img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:center;filter:saturate(.88) contrast(1.02);transform:scale(1.012)}
-    .cover::after{content:'';position:absolute;inset:0;background:linear-gradient(90deg,rgba(3,24,20,.94),rgba(3,24,20,.58) 52%,rgba(3,24,20,.18)),linear-gradient(0deg,rgba(3,24,20,.78),transparent 55%)}
-    .copy{position:relative;z-index:2;width:min(94%,900px);height:100%;display:flex;flex-direction:column;justify-content:flex-end;padding:clamp(2.2rem,8vw,6rem) clamp(1.25rem,5vw,4rem)}
-    .category{font-size:.72rem;font-weight:800;text-transform:uppercase;letter-spacing:.19em;color:#d9ebe2}.copy h1{max-width:850px;margin:.9rem 0 1rem;font-family:Georgia,serif;font-size:clamp(2.6rem,7vw,6rem);line-height:.98;letter-spacing:-.04em}.copy p{max-width:700px;margin:0;color:rgba(255,255,255,.78);font-size:clamp(.95rem,2vw,1.15rem);line-height:1.65}.meta{margin-top:1.15rem;color:rgba(255,255,255,.64);font-size:.8rem}.bar{margin-top:1.6rem;width:min(310px,70vw);height:3px;overflow:hidden;border-radius:99px;background:rgba(255,255,255,.22)}.bar::after{content:'';display:block;width:38%;height:100%;background:#dcebe4;animation:load 1.35s ease-in-out infinite}
-    @keyframes load{0%{transform:translateX(-115%)}65%,100%{transform:translateX(280%)}}
-    @media(max-width:720px){.preview{grid-template-rows:70px minmax(0,1fr)}.nav{padding:0 1.1rem}.nav img{width:90px}.brand{display:none}.tag{font-size:.64rem}.cover{display:grid;grid-template-rows:minmax(270px,48dvh) minmax(0,1fr)}.cover>img{position:relative;inset:auto;height:100%;object-fit:cover;object-position:center}.cover::after{background:linear-gradient(0deg,var(--brand) 0%,rgba(14,47,45,.88) 34%,rgba(14,47,45,0) 62%)}.copy{height:auto;justify-content:flex-start;padding:1.2rem 1.25rem 2rem;margin-top:-72px}.copy h1{font-size:clamp(2.25rem,10vw,3.5rem);line-height:1}.copy p{font-size:.88rem;line-height:1.55}.meta{font-size:.72rem}}
-    @media(prefers-reduced-motion:reduce){#etos-app,.preview,.bar::after{animation:none;transition-duration:1ms}}
+    :root{--brand:#0c332d;--brand-2:#155e4b;--accent:#2b7a60;--paper:#f6f5f1;--ink:#17211d;--muted:#68736e;--line:#dce5df;--white:#fff}
+    *{box-sizing:border-box}
+    html{scroll-behavior:smooth}
+    body{margin:0;background:var(--paper);color:var(--ink);font-family:Arial,Helvetica,sans-serif;-webkit-font-smoothing:antialiased}
+    a{color:inherit}
+    .site-header{position:relative;z-index:5;display:flex;align-items:center;min-height:88px;padding:0 clamp(1.1rem,4vw,4rem);border-top:2px solid var(--accent);border-bottom:1px solid var(--line);background:rgba(255,255,255,.97)}
+    .site-header img{width:88px;height:44px;object-fit:contain}.brand{margin-left:.85rem;font-family:Georgia,serif;font-size:clamp(1.4rem,2.4vw,2rem);font-weight:700}.section-label{margin-left:auto;font-size:.75rem;font-weight:800;letter-spacing:.17em;text-transform:uppercase;color:#53615b}
+    .hero{position:relative;min-height:min(720px,78vh);display:flex;align-items:flex-end;overflow:hidden;background:var(--brand);color:#fff}
+    .hero-image{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:${escapeHtml(imagePosition)};filter:saturate(.88) contrast(1.03)}
+    .hero::after{content:"";position:absolute;inset:0;background:linear-gradient(90deg,rgba(2,25,21,.94) 0%,rgba(2,25,21,.75) 43%,rgba(2,25,21,.24) 100%),linear-gradient(0deg,rgba(2,25,21,.88),transparent 65%)}
+    .hero-copy{position:relative;z-index:2;width:min(100%,1080px);padding:clamp(3rem,8vw,7rem) clamp(1.25rem,5vw,4.75rem)}
+    .eyebrow{font-size:.73rem;font-weight:800;letter-spacing:.19em;text-transform:uppercase;color:#d7e8df}
+    h1{max-width:1000px;margin:.9rem 0 1.2rem;font-family:Georgia,serif;font-size:clamp(3rem,8vw,7rem);line-height:.94;letter-spacing:-.045em;text-wrap:balance}
+    .lead{max-width:760px;margin:0;font-size:clamp(1rem,2vw,1.22rem);line-height:1.7;color:rgba(255,255,255,.82)}
+    .meta{margin-top:1.3rem;font-size:.84rem;color:rgba(255,255,255,.66)}
+    .article-shell{width:min(100% - 2rem,900px);margin:0 auto;padding:clamp(2.4rem,7vw,6rem) 0 6rem}
+    .article-tools{display:flex;align-items:center;justify-content:space-between;gap:1rem;margin-bottom:2.5rem}
+    .back,.share{display:inline-flex;align-items:center;justify-content:center;min-height:46px;padding:.75rem 1rem;border:1px solid var(--line);border-radius:999px;background:#fff;text-decoration:none;font-weight:700;color:#33413b}
+    .share{cursor:pointer;background:var(--brand-2);border-color:var(--brand-2);color:#fff}
+    .article-content{font-family:Georgia,"Times New Roman",serif;font-size:clamp(1.08rem,2vw,1.28rem);line-height:1.9;color:#27322d;overflow-wrap:anywhere}
+    .article-content p{margin:0 0 1.55em}.article-content h2,.article-content h3,.article-content h4{line-height:1.2;color:#13231d;margin:2.2em 0 .75em}.article-content h2{font-size:clamp(1.8rem,4vw,2.75rem)}.article-content h3{font-size:clamp(1.45rem,3vw,2rem)}
+    .article-content blockquote{margin:2rem 0;padding:1.25rem 1.5rem;border-left:4px solid var(--accent);background:#eaf1ed;font-style:italic}
+    .article-content img{display:block;max-width:100%;height:auto;margin:2.2rem auto;border-radius:18px}.article-content a{color:var(--brand-2)}
+    .article-content ul,.article-content ol{padding-left:1.4em}.article-content li{margin:.45em 0}
+    .loading{transition:opacity .28s ease}.loading.done{opacity:0;height:0;overflow:hidden;pointer-events:none}
+    .loading-note{display:flex;align-items:center;gap:.8rem;margin-bottom:1.7rem;color:var(--muted);font-family:Arial,sans-serif;font-size:.9rem}
+    .pulse-dot{width:11px;height:11px;border-radius:50%;background:var(--accent);box-shadow:0 0 0 0 rgba(43,122,96,.38);animation:pulse 1.4s infinite}
+    .skeleton{height:17px;margin:0 0 16px;border-radius:999px;background:linear-gradient(90deg,#e3e8e5 20%,#f4f6f5 45%,#e3e8e5 70%);background-size:240% 100%;animation:shimmer 1.25s linear infinite}.skeleton:nth-child(3n){width:76%}.skeleton:nth-child(4n){width:91%}
+    .article-content.is-ready{animation:contentIn .38s cubic-bezier(.22,1,.36,1)}
+    .load-error{display:none;padding:1.5rem;border:1px solid #d9e1dc;border-radius:18px;background:#fff;color:#56645d}.load-error.show{display:block}.retry{margin-top:1rem;padding:.75rem 1rem;border:0;border-radius:999px;background:var(--brand-2);color:#fff;font-weight:700;cursor:pointer}
+    footer{padding:2rem 1.2rem;background:var(--brand);color:rgba(255,255,255,.72);text-align:center;font-size:.83rem}
+    @keyframes shimmer{to{background-position:-240% 0}}@keyframes pulse{70%{box-shadow:0 0 0 10px rgba(43,122,96,0)}}@keyframes contentIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+    @media(max-width:720px){
+      .site-header{min-height:74px}.site-header img{width:76px}.brand{font-size:1.4rem}.section-label{font-size:.62rem}
+      .hero{display:grid;min-height:0;background:var(--brand)}.hero-image{position:relative;inset:auto;display:block;aspect-ratio:4/3;height:auto;object-fit:cover;object-position:${escapeHtml(imagePosition)}}
+      .hero::after{background:linear-gradient(0deg,var(--brand) 0%,rgba(12,51,45,.88) 30%,rgba(12,51,45,0) 68%)}
+      .hero-copy{margin-top:-96px;padding:1.5rem 1.25rem 2.4rem}.hero h1{font-size:clamp(2.55rem,12vw,4.25rem);line-height:.96}.lead{font-size:.96rem;line-height:1.6}
+      .article-shell{width:min(100% - 2rem,760px);padding-top:2.2rem}.article-tools{margin-bottom:2rem}.article-content{font-size:1.06rem;line-height:1.82}
+    }
+    @media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}.pulse-dot,.skeleton,.article-content.is-ready{animation:none}}
   </style>
 </head>
 <body>
-  <div class="preview" aria-hidden="true">
-    <div class="nav"><img src="${LOGO_URL}" alt=""><span class="brand">Etos ID Palu</span><span class="tag">${escapeHtml(type)}</span></div>
-    <section class="cover"><img src="${escapeHtml(image)}" alt=""><div class="copy"><span class="category">${escapeHtml(type)} · Etos ID Palu</span><h1>${escapeHtml(title)}</h1><p>${escapeHtml(description)}</p><div class="meta">${escapeHtml(author)}${date ? ` · ${escapeHtml(date)}` : ''}</div><div class="bar"></div></div></section>
-  </div>
+  <header class="site-header">
+    <img src="${LOGO_URL}" alt="Logo Etos ID">
+    <span class="brand">Etos ID Palu</span>
+    <span class="section-label">${escapeHtml(type)}</span>
+  </header>
 
-  <iframe id="etos-app" src="${escapeHtml(iframeUrl)}" title="${escapeHtml(title)}" scrolling="yes" loading="eager" allow="camera; microphone; geolocation; clipboard-read; clipboard-write; fullscreen" allowfullscreen></iframe>
+  <section class="hero">
+    <img id="hero-image" class="hero-image" src="${escapeHtml(image)}" alt="${escapeHtml(title)}">
+    <div class="hero-copy">
+      <div class="eyebrow">${escapeHtml(type)} · Etos ID Palu</div>
+      <h1>${escapeHtml(title)}</h1>
+      <p class="lead">${escapeHtml(description)}</p>
+      <div class="meta">${escapeHtml(author)}${date ? ` · ${escapeHtml(date)}` : ''}</div>
+    </div>
+  </section>
+
+  <main class="article-shell">
+    <div class="article-tools">
+      <a class="back" href="${SITE_URL}/">← Kembali ke Etos ID Palu</a>
+      <button class="share" id="share-button" type="button">Bagikan tulisan</button>
+    </div>
+
+    <div id="article-loading" class="loading" aria-live="polite">
+      <div class="loading-note"><span class="pulse-dot"></span><span>Menyiapkan isi tulisan…</span></div>
+      <div class="skeleton"></div><div class="skeleton"></div><div class="skeleton"></div>
+      <div class="skeleton"></div><div class="skeleton"></div><div class="skeleton"></div>
+      <div class="skeleton"></div><div class="skeleton"></div><div class="skeleton"></div>
+    </div>
+
+    <article id="article-content" class="article-content" hidden></article>
+
+    <section id="load-error" class="load-error">
+      <strong>Isi tulisan belum berhasil dimuat.</strong>
+      <p>Koneksi mungkin terputus. Halaman ini tidak perlu dibuka ulang dari awal.</p>
+      <button id="retry-button" class="retry" type="button">Coba lagi</button>
+    </section>
+  </main>
+
+  <footer>© 2026 Etos ID Palu. Hak Cipta Dilindungi Undang-Undang.</footer>
 
   <script>
+    window.__ETOS_PUBLICATION__ = ${bootstrap};
+
     (function(){
-      var GAS_URL=${JSON.stringify(GAS_URL)};
-      var iframe=document.getElementById('etos-app');
-      var ready=false;
-      function parseRoute(path){var m=String(path||'').match(/^\\/(berita|opini)\\/([a-z0-9-]+)\\/?$/i);return m?{jenis:m[1].toLowerCase()==='berita'?'Berita':'Opini',slug:m[2]}:null}
-      function iframeUrl(){var r=parseRoute(location.pathname);return r?GAS_URL+'?slug='+encodeURIComponent(r.slug)+'&jenis='+encodeURIComponent(r.jenis)+'&embedded=1':GAS_URL}
-      function reveal(){if(ready)return;ready=true;document.body.classList.add('ready')}
-      iframe.addEventListener('load',function(){requestAnimationFrame(function(){requestAnimationFrame(reveal)})},{once:true});
-      addEventListener('message',function(event){if(event.source!==iframe.contentWindow)return;var d=event.data||{};if(d.source!=='etos-id-palu'||d.action!=='route')return;var path=String(d.path||'/');if(!/^\\/$|^\\/(berita|opini)\\/[a-z0-9-]+\\/?$/i.test(path))path='/';history[d.replace?'replaceState':'pushState']({etosRoute:true},'',path);if(d.title)document.title=d.title});
-      addEventListener('popstate',function(){iframe.src=iframeUrl();document.body.classList.add('ready')});
+      var state = window.__ETOS_PUBLICATION__;
+      var loading = document.getElementById('article-loading');
+      var article = document.getElementById('article-content');
+      var errorBox = document.getElementById('load-error');
+      var retryButton = document.getElementById('retry-button');
+      var shareButton = document.getElementById('share-button');
+      var heroImage = document.getElementById('hero-image');
+      var fallbackImage = ${JSON.stringify(FALLBACK_IMAGE)};
+
+      heroImage.addEventListener('error', function(){
+        if(heroImage.src !== fallbackImage) heroImage.src = fallbackImage;
+      });
+
+      function escapeText(value) {
+        return String(value == null ? '' : value)
+          .replace(/&/g, '&amp;')
+          .replace(/</g, '&lt;')
+          .replace(/>/g, '&gt;')
+          .replace(/"/g, '&quot;')
+          .replace(/'/g, '&#39;');
+      }
+
+      function sanitizeArticleHtml(rawHtml) {
+        var raw = String(rawHtml || '');
+        if(!/<[a-z][\s\S]*>/i.test(raw)) {
+          return raw
+            .split(/\n{2,}/)
+            .map(function(paragraph){
+              return '<p>' + escapeText(paragraph).replace(/\n/g, '<br>') + '</p>';
+            })
+            .join('');
+        }
+
+        var template = document.createElement('template');
+        template.innerHTML = raw;
+
+        template.content
+          .querySelectorAll('script,style,iframe,object,embed,form,input,textarea,button,link,meta')
+          .forEach(function(node){ node.remove(); });
+
+        template.content.querySelectorAll('*').forEach(function(node){
+          Array.prototype.slice.call(node.attributes || []).forEach(function(attribute){
+            var name = String(attribute.name || '').toLowerCase();
+            var value = String(attribute.value || '');
+            if(name.indexOf('on') === 0) node.removeAttribute(attribute.name);
+            if((name === 'href' || name === 'src') && /^\s*javascript:/i.test(value)) {
+              node.removeAttribute(attribute.name);
+            }
+            if(name === 'style' && /expression\s*\(|javascript:|url\s*\(\s*['"]?\s*javascript:/i.test(value)) {
+              node.removeAttribute('style');
+            }
+          });
+        });
+
+        return template.innerHTML;
+      }
+
+      function setLoading(isLoading) {
+        if(isLoading) {
+          loading.classList.remove('done');
+          loading.removeAttribute('aria-hidden');
+          article.hidden = true;
+          errorBox.classList.remove('show');
+        } else {
+          loading.classList.add('done');
+          loading.setAttribute('aria-hidden', 'true');
+        }
+      }
+
+      function loadFullArticle() {
+        setLoading(true);
+
+        var endpoint = '/api/content?format=json&jenis=' +
+          encodeURIComponent(state.type) +
+          '&slug=' + encodeURIComponent(state.slug) +
+          '&_ts=' + Date.now();
+
+        fetch(endpoint, {
+          cache: 'no-store',
+          headers: { accept: 'application/json' }
+        })
+          .then(function(response){
+            if(!response.ok) throw new Error('HTTP ' + response.status);
+            return response.json();
+          })
+          .then(function(payload){
+            if(!payload || payload.status !== 'success' || !payload.data) {
+              throw new Error((payload && payload.message) || 'Data tulisan tidak tersedia.');
+            }
+
+            var data = payload.data;
+            var html = sanitizeArticleHtml(data.isi || '');
+            if(!html.trim()) throw new Error('Isi tulisan kosong.');
+
+            article.innerHTML = html;
+            article.hidden = false;
+            article.classList.remove('is-ready');
+            void article.offsetWidth;
+            article.classList.add('is-ready');
+            setLoading(false);
+
+            if(data.thumb) {
+              var nextImage = String(data.thumb);
+              if(nextImage && !/^data:/i.test(nextImage)) heroImage.src = nextImage;
+            }
+          })
+          .catch(function(error){
+            console.error('Gagal memuat isi publikasi:', error);
+            loading.classList.add('done');
+            article.hidden = true;
+            errorBox.classList.add('show');
+          });
+      }
+
+      retryButton.addEventListener('click', loadFullArticle);
+
+      shareButton.addEventListener('click', function(){
+        var shareData = {
+          title: state.title,
+          text: state.title,
+          url: state.canonical
+        };
+
+        if(navigator.share) {
+          navigator.share(shareData).catch(function(){});
+          return;
+        }
+
+        var whatsapp = 'https://wa.me/?text=' +
+          encodeURIComponent(state.title + '\n' + state.canonical);
+        window.open(whatsapp, '_blank', 'noopener');
+      });
+
+      loadFullArticle();
     }());
   </script>
 </body>
@@ -240,22 +434,54 @@ function renderPublicationPage(data) {
 module.exports = async function handler(req, res) {
   const slug = String(req.query.slug || '').trim().toLowerCase();
   const requestedType = normalizeType(req.query.jenis || 'Opini');
+  const format = String(req.query.format || '').trim().toLowerCase();
 
-  res.setHeader('Content-Type', 'text/html; charset=utf-8');
   res.setHeader('X-Content-Type-Options', 'nosniff');
   res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
 
   if (!/^[a-z0-9-]{3,220}$/.test(slug)) {
+    if (format === 'json') {
+      res.statusCode = 400;
+      res.setHeader('Content-Type', 'application/json; charset=utf-8');
+      res.setHeader('Cache-Control', 'no-store');
+      res.end(JSON.stringify({ status: 'error', message: 'Slug tidak valid.', data: null }));
+      return;
+    }
+
     res.statusCode = 404;
+    res.setHeader('Content-Type', 'text/html; charset=utf-8');
     res.setHeader('Cache-Control', 'no-store, max-age=0, must-revalidate');
     res.end(renderNotFound(slug));
     return;
   }
 
   try {
-    const publication = await fetchPublication(slug);
+    if (format === 'json') {
+      const publication = await fetchGasPublication(slug, true);
+      if (!publication) {
+        res.statusCode = 404;
+        res.setHeader('Content-Type', 'application/json; charset=utf-8');
+        res.setHeader('Cache-Control', 'no-store');
+        res.end(JSON.stringify({
+          status: 'error',
+          message: 'Isi tulisan tidak ditemukan atau belum diterbitkan.',
+          data: null
+        }));
+        return;
+      }
+
+      publication.thumb = normalizeImageUrl(publication.thumb);
+      res.statusCode = 200;
+      res.setHeader('Content-Type', 'application/json; charset=utf-8');
+      res.setHeader('Cache-Control', 'no-store, max-age=0, must-revalidate');
+      res.end(JSON.stringify({ status: 'success', data: publication }));
+      return;
+    }
+
+    const publication = await fetchGasPublication(slug, false);
     if (!publication) {
       res.statusCode = 404;
+      res.setHeader('Content-Type', 'text/html; charset=utf-8');
       res.setHeader('Cache-Control', 'no-store, max-age=0, must-revalidate');
       res.end(renderNotFound(slug));
       return;
@@ -266,11 +492,6 @@ module.exports = async function handler(req, res) {
     const actualPath = `/${routeSegment(actualType)}/${encodeURIComponent(canonicalSlug)}`;
     const requestedPath = `/${routeSegment(requestedType)}/${encodeURIComponent(slug)}`;
 
-    /*
-     * Bila judul pernah berubah, Apps Script dapat menemukan tulisan melalui
-     * ID ART/BRT pada ujung slug dan mengembalikan slug terbaru. URL lama
-     * kemudian diarahkan secara permanen ke URL kanonis yang benar.
-     */
     if (actualPath !== requestedPath) {
       res.statusCode = 308;
       res.setHeader('Location', actualPath);
@@ -280,12 +501,29 @@ module.exports = async function handler(req, res) {
     }
 
     publication.slug = canonicalSlug;
+    publication.thumb = normalizeImageUrl(publication.thumb);
+
     res.statusCode = 200;
+    res.setHeader('Content-Type', 'text/html; charset=utf-8');
     res.setHeader('Cache-Control', 'public, s-maxage=300, stale-while-revalidate=3600');
     res.end(renderPublicationPage(publication));
   } catch (error) {
-    console.error('Failed to render publication metadata:', error);
+    console.error('Failed to render publication:', error);
+
+    if (format === 'json') {
+      res.statusCode = 503;
+      res.setHeader('Content-Type', 'application/json; charset=utf-8');
+      res.setHeader('Cache-Control', 'no-store');
+      res.end(JSON.stringify({
+        status: 'error',
+        message: 'Isi tulisan sedang tidak dapat dimuat.',
+        data: null
+      }));
+      return;
+    }
+
     res.statusCode = 503;
+    res.setHeader('Content-Type', 'text/html; charset=utf-8');
     res.setHeader('Cache-Control', 'no-store');
     res.end(renderNotFound(slug));
   }
@@ -296,8 +534,8 @@ module.exports._test = {
   stripHtml,
   truncate,
   normalizeType,
-  toIsoDate,
   routeSegment,
+  toIsoDate,
   normalizeImageUrl,
   renderPublicationPage
 };
