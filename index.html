@@ -63,11 +63,13 @@
       height: 100dvh;
       min-height: -webkit-fill-available;
       border: 0;
-      background: var(--paper);
-      opacity: 1;
+      background: var(--brand-950);
+      opacity: 0;
       pointer-events: none;
+      transition: opacity .18s ease;
     }
 
+    body.frame-ready #etos-app { opacity: 1; }
     body.app-ready #etos-app { pointer-events: auto; }
 
     .launch-preview {
@@ -438,22 +440,31 @@
         if(ready) return;
         ready = true;
         if(loadFallbackTimer) window.clearTimeout(loadFallbackTimer);
-        document.body.classList.add('app-ready');
-        window.setTimeout(function () {
-          if(preview && preview.parentNode) preview.parentNode.removeChild(preview);
-        }, 620);
+
+        // Paint the iframe completely behind the preview first. The preview only
+        // fades after two frames and a short settling delay, preventing white flash.
+        document.body.classList.add('frame-ready');
+        window.requestAnimationFrame(function() {
+          window.requestAnimationFrame(function() {
+            window.setTimeout(function() {
+              document.body.classList.add('app-ready');
+              window.setTimeout(function () {
+                if(preview && preview.parentNode) preview.parentNode.removeChild(preview);
+              }, 620);
+            }, 180);
+          });
+        });
       }
 
       iframe.src = iframeUrlForLocation();
       fallback.href = iframe.src;
 
       iframe.addEventListener('load', function () {
-        // Fallback aman untuk browser yang tidak meneruskan postMessage ready.
+        // Normal path waits for the child's visual-ready message. This delayed
+        // fallback is only for browsers that suppress cross-frame messages.
         loadFallbackTimer = window.setTimeout(function () {
-          window.requestAnimationFrame(function () {
-            window.requestAnimationFrame(revealApp);
-          });
-        }, 420);
+          revealApp();
+        }, 3200);
       }, { once: true });
 
       window.addEventListener('message', function(event) {
@@ -462,7 +473,7 @@
         if(data.source !== 'etos-id-palu') return;
 
         if(data.action === 'ready') {
-          window.setTimeout(revealApp, 90);
+          revealApp();
           return;
         }
 
