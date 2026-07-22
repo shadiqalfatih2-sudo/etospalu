@@ -108,8 +108,355 @@ function renderPublication(data) {
   const date = String(data.tanggal || '').trim();
   const content = sanitizeArticleHtml(data.isi || '');
   const sharePayload = JSON.stringify({title, url: canonical}).replace(/</g,'\\u003c');
-  return `<!doctype html><html lang="id"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="theme-color" content="#0c332d"><title>${escapeHtml(title)} | Etos ID Palu</title><link rel="canonical" href="${escapeHtml(canonical)}"><meta name="description" content="${escapeHtml(description)}"><meta property="og:type" content="article"><meta property="og:site_name" content="Etos ID Palu"><meta property="og:title" content="${escapeHtml(title)}"><meta property="og:description" content="${escapeHtml(description)}"><meta property="og:url" content="${escapeHtml(canonical)}"><meta property="og:image" content="${escapeHtml(image)}"><meta property="og:image:secure_url" content="${escapeHtml(image)}"><meta name="twitter:card" content="summary_large_image"><meta name="twitter:title" content="${escapeHtml(title)}"><meta name="twitter:description" content="${escapeHtml(description)}"><meta name="twitter:image" content="${escapeHtml(image)}"><link rel="preload" as="image" href="${escapeHtml(image)}"><style>
-  :root{--brand:#0c332d;--brand2:#155e4b;--paper:#f6f5f1;--ink:#17211d;--muted:#65716c;--line:#dce5df;--white:#fff}*{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;background:var(--paper);color:var(--ink);font-family:Arial,sans-serif;-webkit-font-smoothing:antialiased}.header{display:flex;align-items:center;min-height:78px;padding:0 clamp(1rem,4vw,3.5rem);background:#fff;border-top:2px solid #2b7a60;border-bottom:1px solid var(--line)}.header img{width:82px;height:42px;object-fit:contain}.brand{margin-left:.75rem;font:700 clamp(1.3rem,2.3vw,1.85rem) Georgia,serif}.type{margin-left:auto;font-size:.72rem;font-weight:800;letter-spacing:.16em;text-transform:uppercase;color:#5e6b65}.page{width:min(100% - 2rem,1120px);margin:0 auto;padding:clamp(1.5rem,4vw,3.25rem) 0 5rem}.cover{position:relative;overflow:hidden;aspect-ratio:16/8.4;max-height:570px;border-radius:28px;background:var(--brand);box-shadow:0 22px 60px rgba(8,35,31,.13)}.cover img{width:100%;height:100%;object-fit:cover;object-position:${escapeHtml(imagePosition)};display:block}.cover img.is-fallback{opacity:.72}.article-head{width:min(100%,930px);margin:clamp(2rem,5vw,4.4rem) auto 0}.eyebrow{font-size:.75rem;font-weight:800;letter-spacing:.18em;text-transform:uppercase;color:var(--brand2)}h1{margin:.7rem 0 1.1rem;font:700 clamp(2.45rem,5.2vw,5rem)/.99 Georgia,serif;letter-spacing:-.045em;text-wrap:balance;overflow-wrap:anywhere}.dek{max-width:780px;margin:0;font-size:clamp(1rem,1.7vw,1.2rem);line-height:1.7;color:var(--muted)}.meta{margin-top:1rem;font-size:.86rem;color:#7b8681}.tools{display:flex;align-items:center;justify-content:space-between;gap:1rem;margin:2.2rem 0 2.7rem;padding-top:1.6rem;border-top:1px solid var(--line)}.back,.share{display:inline-flex;align-items:center;justify-content:center;min-height:46px;padding:.75rem 1rem;border:1px solid var(--line);border-radius:999px;background:#fff;color:#33413b;text-decoration:none;font-weight:700}.share{border-color:var(--brand2);background:var(--brand2);color:#fff;cursor:pointer}.content{width:min(100%,800px);margin:0 auto;font:400 clamp(1.08rem,1.6vw,1.25rem)/1.9 Georgia,serif;color:#27322d;overflow-wrap:anywhere}.content p{margin:0 0 1.5em}.content h2,.content h3,.content h4{font-weight:700;line-height:1.2;color:#13231d;margin:2.1em 0 .7em}.content h2{font-size:clamp(1.8rem,3.7vw,2.65rem)}.content h3{font-size:clamp(1.45rem,3vw,2rem)}.content blockquote{margin:2rem 0;padding:1.2rem 1.45rem;border-left:4px solid #2b7a60;background:#eaf1ed;font-style:italic}.content img{display:block;max-width:100%;height:auto;margin:2.2rem auto;border-radius:18px}.content ul,.content ol{padding-left:1.4em}.content li{margin:.45em 0}.content a{color:var(--brand2)}footer{padding:2rem 1rem;background:var(--brand);color:rgba(255,255,255,.72);text-align:center;font-size:.84rem}@media(max-width:720px){.header{min-height:72px}.header img{width:72px}.brand{font-size:1.35rem}.type{font-size:.62rem}.page{width:min(100% - 1.25rem,1120px);padding-top:.8rem}.cover{aspect-ratio:4/3;border-radius:20px}.article-head{margin-top:2rem}h1{font-size:clamp(2.15rem,10.7vw,3.45rem);line-height:1.01}.dek{font-size:.98rem}.tools{align-items:stretch;flex-direction:column}.back,.share{width:100%}.content{font-size:1.06rem;line-height:1.82}}@media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}}</style></head><body><header class="header"><img src="${LOGO_URL}" alt="Logo Etos ID"><span class="brand">Etos ID Palu</span><span class="type">${escapeHtml(type)}</span></header><main class="page"><figure class="cover"><img id="cover-image" src="${escapeHtml(image)}" alt="${escapeHtml(title)}"></figure><section class="article-head"><div class="eyebrow">${escapeHtml(type)} · Etos ID Palu</div><h1>${escapeHtml(title)}</h1><p class="dek">${escapeHtml(description)}</p><div class="meta">${escapeHtml(author)}${date ? ` · ${escapeHtml(date)}` : ''}</div><div class="tools"><a class="back" href="${SITE_URL}/">← Kembali ke Etos ID Palu</a><button class="share" id="share" type="button">Bagikan tulisan</button></div></section><article class="content">${content}</article></main><footer>© 2026 Etos ID Palu. Hak Cipta Dilindungi Undang-Undang.</footer><script>var p=${sharePayload};var img=document.getElementById('cover-image');img.addEventListener('error',function(){if(img.src!==${JSON.stringify(FALLBACK_IMAGE)}){img.src=${JSON.stringify(FALLBACK_IMAGE)};img.classList.add('is-fallback')}});document.getElementById('share').addEventListener('click',function(){if(navigator.share){navigator.share({title:p.title,text:p.title,url:p.url}).catch(function(){})}else{window.open('https://wa.me/?text='+encodeURIComponent(p.title+'\\n'+p.url),'_blank','noopener')}});</script></body></html>`;
+
+  return `<!doctype html>
+<html lang="id">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#0c332d">
+  <title>${escapeHtml(title)} | Etos ID Palu</title>
+  <link rel="canonical" href="${escapeHtml(canonical)}">
+  <meta name="description" content="${escapeHtml(description)}">
+  <meta property="og:type" content="article">
+  <meta property="og:site_name" content="Etos ID Palu">
+  <meta property="og:title" content="${escapeHtml(title)}">
+  <meta property="og:description" content="${escapeHtml(description)}">
+  <meta property="og:url" content="${escapeHtml(canonical)}">
+  <meta property="og:image" content="${escapeHtml(image)}">
+  <meta property="og:image:secure_url" content="${escapeHtml(image)}">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="${escapeHtml(title)}">
+  <meta name="twitter:description" content="${escapeHtml(description)}">
+  <meta name="twitter:image" content="${escapeHtml(image)}">
+  <link rel="preload" as="image" href="${escapeHtml(image)}">
+  <style>
+    :root{
+      --brand:#0c332d;
+      --brand2:#155e4b;
+      --paper:#f6f5f1;
+      --ink:#17211d;
+      --muted:#65716c;
+      --line:#dce5df;
+      --white:#fff;
+    }
+    *{box-sizing:border-box}
+    html{scroll-behavior:smooth}
+    body{
+      margin:0;
+      background:var(--paper);
+      color:var(--ink);
+      font-family:Arial,sans-serif;
+      -webkit-font-smoothing:antialiased;
+      text-rendering:optimizeLegibility;
+    }
+    .header{
+      display:flex;
+      align-items:center;
+      min-height:78px;
+      padding:0 clamp(1rem,4vw,3.5rem);
+      background:#fff;
+      border-top:2px solid #2b7a60;
+      border-bottom:1px solid var(--line);
+    }
+    .header img{width:82px;height:42px;object-fit:contain}
+    .brand{
+      margin-left:.75rem;
+      font:700 clamp(1.3rem,2.3vw,1.85rem) Georgia,serif;
+    }
+    .type{
+      margin-left:auto;
+      font-size:.72rem;
+      font-weight:800;
+      letter-spacing:.16em;
+      text-transform:uppercase;
+      color:#5e6b65;
+    }
+    .page{
+      width:min(100% - 2rem,1160px);
+      margin:0 auto;
+      padding:clamp(2.25rem,5vw,4.75rem) 0 5.5rem;
+    }
+    .article-head{
+      width:min(100%,940px);
+      margin:0 auto;
+    }
+    .eyebrow{
+      margin-bottom:.85rem;
+      font-size:.72rem;
+      font-weight:800;
+      letter-spacing:.18em;
+      text-transform:uppercase;
+      color:var(--brand2);
+    }
+    h1{
+      max-width:900px;
+      margin:0;
+      font:700 clamp(2.75rem,4.15vw,4rem)/1.02 Georgia,serif;
+      letter-spacing:-.038em;
+      text-wrap:balance;
+      overflow-wrap:anywhere;
+    }
+    .dek{
+      max-width:760px;
+      margin:1.15rem 0 0;
+      font-size:clamp(.98rem,1.35vw,1.12rem);
+      line-height:1.72;
+      color:var(--muted);
+    }
+    .meta-tools{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:1rem 1.5rem;
+      margin-top:1.15rem;
+      padding-bottom:1.35rem;
+      border-bottom:1px solid var(--line);
+    }
+    .meta{
+      min-width:0;
+      font-size:.84rem;
+      line-height:1.5;
+      color:#7b8681;
+    }
+    .tools{
+      display:flex;
+      align-items:center;
+      flex-shrink:0;
+      gap:.5rem;
+    }
+    .back,.share{
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+      gap:.42rem;
+      min-height:38px;
+      padding:.6rem .86rem;
+      border:1px solid var(--line);
+      border-radius:999px;
+      background:#fff;
+      color:#33413b;
+      text-decoration:none;
+      font-size:.76rem;
+      font-weight:700;
+      line-height:1;
+      white-space:nowrap;
+      transition:transform .22s ease,border-color .22s ease,background .22s ease,color .22s ease;
+    }
+    .share{
+      border-color:var(--brand2);
+      background:var(--brand2);
+      color:#fff;
+      cursor:pointer;
+    }
+    .back:hover,.share:hover{transform:translateY(-2px)}
+    .back:focus-visible,.share:focus-visible{
+      outline:3px solid rgba(43,122,96,.24);
+      outline-offset:3px;
+    }
+    .mobile-label{display:none}
+    .cover{
+      position:relative;
+      width:min(100%,940px);
+      margin:2.15rem auto 0;
+      overflow:hidden;
+      aspect-ratio:16/9;
+      max-height:560px;
+      border-radius:18px;
+      background:var(--brand);
+      box-shadow:0 18px 46px rgba(8,35,31,.1);
+    }
+    .cover img{
+      display:block;
+      width:100%;
+      height:100%;
+      object-fit:cover;
+      object-position:${escapeHtml(imagePosition)};
+    }
+    .cover img.is-fallback{opacity:.72}
+    .content{
+      width:min(100%,760px);
+      margin:clamp(3rem,6vw,5rem) auto 0;
+      color:#27322d;
+      font:400 clamp(1.06rem,1.35vw,1.16rem)/1.88 Georgia,serif;
+      overflow-wrap:anywhere;
+    }
+    .content p{margin:0 0 1.45em}
+    .content h2,.content h3,.content h4{
+      margin:2.05em 0 .68em;
+      color:#13231d;
+      font-weight:700;
+      line-height:1.22;
+    }
+    .content h2{font-size:clamp(1.65rem,3vw,2.3rem)}
+    .content h3{font-size:clamp(1.38rem,2.4vw,1.85rem)}
+    .content h4{font-size:clamp(1.2rem,2vw,1.5rem)}
+    .content blockquote{
+      margin:2rem 0;
+      padding:1.15rem 1.35rem;
+      border-left:4px solid #2b7a60;
+      background:#eaf1ed;
+      font-style:italic;
+    }
+    .content img{
+      display:block;
+      max-width:100%;
+      height:auto;
+      margin:2.15rem auto;
+      border-radius:16px;
+    }
+    .content ul,.content ol{padding-left:1.35em}
+    .content li{margin:.42em 0}
+    .content a{color:var(--brand2)}
+    footer{
+      padding:2rem 1rem;
+      background:var(--brand);
+      color:rgba(255,255,255,.72);
+      text-align:center;
+      font-size:.84rem;
+    }
+    @media(max-width:720px){
+      .header{min-height:72px;padding-inline:1rem}
+      .header img{width:72px}
+      .brand{font-size:1.35rem}
+      .type{font-size:.62rem}
+      .page{
+        width:min(100% - 1.5rem,680px);
+        padding:1.65rem 0 4rem;
+      }
+      .article-head{width:100%}
+      .eyebrow{
+        margin-bottom:.7rem;
+        font-size:.68rem;
+        letter-spacing:.17em;
+      }
+      h1{
+        max-width:none;
+        font-size:clamp(2.12rem,9.2vw,2.72rem);
+        line-height:1.04;
+        letter-spacing:-.032em;
+      }
+      .dek{
+        margin-top:1rem;
+        font-size:.97rem;
+        line-height:1.65;
+      }
+      .meta-tools{
+        align-items:flex-start;
+        margin-top:1rem;
+        padding-bottom:1rem;
+      }
+      .meta{
+        padding-top:.35rem;
+        font-size:.78rem;
+      }
+      .tools{
+        gap:.38rem;
+      }
+      .back,.share{
+        min-height:34px;
+        padding:.52rem .68rem;
+        font-size:.69rem;
+        gap:.32rem;
+      }
+      .desktop-label{display:none}
+      .mobile-label{display:inline}
+      .cover{
+        width:100%;
+        margin-top:1.45rem;
+        aspect-ratio:4/3;
+        max-height:none;
+        border-radius:16px;
+        box-shadow:0 12px 32px rgba(8,35,31,.09);
+      }
+      .content{
+        width:100%;
+        margin-top:2.8rem;
+        font-size:1.04rem;
+        line-height:1.84;
+      }
+      .content p{margin-bottom:1.4em}
+      .content h2{font-size:1.7rem}
+      .content h3{font-size:1.42rem}
+      .content blockquote{
+        margin:1.7rem 0;
+        padding:1rem 1.05rem;
+      }
+      .content img{
+        margin:1.8rem auto;
+        border-radius:14px;
+      }
+    }
+    @media(max-width:410px){
+      .brand{font-size:1.25rem}
+      .type{display:none}
+      h1{font-size:clamp(2rem,10.2vw,2.5rem)}
+      .meta-tools{gap:.7rem}
+      .back,.share{padding:.5rem .62rem}
+    }
+    @media(prefers-reduced-motion:reduce){
+      html{scroll-behavior:auto}
+      .back,.share{transition:none}
+    }
+  </style>
+</head>
+<body>
+  <header class="header">
+    <img src="${LOGO_URL}" alt="Logo Etos ID">
+    <span class="brand">Etos ID Palu</span>
+    <span class="type">${escapeHtml(type)}</span>
+  </header>
+
+  <main class="page">
+    <section class="article-head">
+      <div class="eyebrow">${escapeHtml(type)} · Etos ID Palu</div>
+      <h1>${escapeHtml(title)}</h1>
+      <p class="dek">${escapeHtml(description)}</p>
+      <div class="meta-tools">
+        <div class="meta">${escapeHtml(author)}${date ? ` · ${escapeHtml(date)}` : ''}</div>
+        <div class="tools" aria-label="Aksi tulisan">
+          <a class="back" href="${SITE_URL}/" aria-label="Kembali ke Etos ID Palu">
+            <span aria-hidden="true">←</span>
+            <span class="desktop-label">Kembali ke Etos ID Palu</span>
+            <span class="mobile-label">Kembali</span>
+          </a>
+          <button class="share" id="share" type="button" aria-label="Bagikan tulisan">
+            <span aria-hidden="true">↗</span>
+            <span class="desktop-label">Bagikan tulisan</span>
+            <span class="mobile-label">Bagikan</span>
+          </button>
+        </div>
+      </div>
+    </section>
+
+    <figure class="cover">
+      <img id="cover-image" src="${escapeHtml(image)}" alt="${escapeHtml(title)}">
+    </figure>
+
+    <article class="content">${content}</article>
+  </main>
+
+  <footer>© 2026 Etos ID Palu. Hak Cipta Dilindungi Undang-Undang.</footer>
+
+  <script>
+    var p=${sharePayload};
+    var img=document.getElementById('cover-image');
+    img.addEventListener('error',function(){
+      if(img.src!==${JSON.stringify(FALLBACK_IMAGE)}){
+        img.src=${JSON.stringify(FALLBACK_IMAGE)};
+        img.classList.add('is-fallback');
+      }
+    });
+    document.getElementById('share').addEventListener('click',function(){
+      if(navigator.share){
+        navigator.share({title:p.title,text:p.title,url:p.url}).catch(function(){});
+      }else{
+        window.open('https://wa.me/?text='+encodeURIComponent(p.title+'\\n'+p.url),'_blank','noopener');
+      }
+    });
+  </script>
+</body>
+</html>`;
 }
 
 module.exports = async function handler(req, res) {
