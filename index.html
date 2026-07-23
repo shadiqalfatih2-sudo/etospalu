@@ -64,9 +64,10 @@
       min-height: -webkit-fill-available;
       border: 0;
       background: var(--brand-950);
-      opacity: 0;
+      opacity: .001;
       pointer-events: none;
-      transition: opacity .18s ease;
+      transform: translateZ(0);
+      transition: opacity .22s ease;
     }
 
     body.frame-ready #etos-app { opacity: 1; }
@@ -80,14 +81,14 @@
       background: var(--brand-950);
       opacity: 1;
       visibility: visible;
-      transition: opacity .52s cubic-bezier(.22,1,.36,1), visibility 0s linear 0s;
+      transition: opacity .42s cubic-bezier(.22,1,.36,1), visibility 0s linear 0s;
     }
 
     body.app-ready .launch-preview {
       opacity: 0;
       visibility: hidden;
       pointer-events: none;
-      transition: opacity .52s cubic-bezier(.22,1,.36,1), visibility 0s linear .52s;
+      transition: opacity .42s cubic-bezier(.22,1,.36,1), visibility 0s linear .42s;
     }
 
     .preview-nav {
@@ -233,7 +234,7 @@
       width: 42%;
       border-radius: inherit;
       background: #a9cbb7;
-      animation: progress 1.35s ease-in-out infinite;
+      animation: progress 1.05s cubic-bezier(.4,0,.2,1) infinite;
     }
 
     .preview-focus { display: none; }
@@ -423,6 +424,12 @@
       var fallback = document.getElementById('fallback');
       var ready = false;
       var loadFallbackTimer = null;
+      var frameLoaded = false;
+      var startedAt = (window.performance && performance.now)
+        ? performance.now()
+        : Date.now();
+      var MIN_PREVIEW_MS = 420;
+      var MAX_AFTER_LOAD_MS = 760;
 
       function parsePublicationRoute(pathname) {
         var match = String(pathname || '').match(/^\/(berita|opini)\/([a-z0-9-]+)\/?$/i);
@@ -441,30 +448,48 @@
         ready = true;
         if(loadFallbackTimer) window.clearTimeout(loadFallbackTimer);
 
-        // Paint the iframe completely behind the preview first. The preview only
-        // fades after two frames and a short settling delay, preventing white flash.
+        var now = (window.performance && performance.now)
+          ? performance.now()
+          : Date.now();
+        var remaining = Math.max(0, MIN_PREVIEW_MS - (now - startedAt));
+
+        /*
+         * Iframe sudah dirender di belakang preview. Preview baru memudar
+         * setelah browser memperoleh dua frame paint, sehingga tidak ada
+         * layar putih, tetapi juga tidak ada waktu tunggu tetap yang lama.
+         */
         document.body.classList.add('frame-ready');
-        window.requestAnimationFrame(function() {
+
+        window.setTimeout(function() {
           window.requestAnimationFrame(function() {
-            window.setTimeout(function() {
+            window.requestAnimationFrame(function() {
               document.body.classList.add('app-ready');
+
               window.setTimeout(function () {
-                if(preview && preview.parentNode) preview.parentNode.removeChild(preview);
-              }, 620);
-            }, 180);
+                if(preview && preview.parentNode) {
+                  preview.parentNode.removeChild(preview);
+                }
+              }, 560);
+            });
           });
-        });
+        }, remaining);
       }
 
       iframe.src = iframeUrlForLocation();
       fallback.href = iframe.src;
 
       iframe.addEventListener('load', function () {
-        // Normal path waits for the child's visual-ready message. This delayed
-        // fallback is only for browsers that suppress cross-frame messages.
+        frameLoaded = true;
+        document.body.classList.add('frame-ready');
+
+        /*
+         * Sinyal visual-ready dari halaman Apps Script tetap menjadi jalur
+         * utama. Bila pesan lintas-frame diblokir browser, wrapper tidak lagi
+         * menunggu 3,2 detik; halaman dibuka segera setelah paint singkat.
+         */
         loadFallbackTimer = window.setTimeout(function () {
           revealApp();
-        }, 3200);
+        }, MAX_AFTER_LOAD_MS);
       }, { once: true });
 
       window.addEventListener('message', function(event) {
@@ -491,8 +516,8 @@
       });
 
       window.setTimeout(function () {
-        if(!ready) fallback.classList.add('show');
-      }, 12000);
+        if(!ready && !frameLoaded) fallback.classList.add('show');
+      }, 7000);
     }());
   </script>
 </body>
